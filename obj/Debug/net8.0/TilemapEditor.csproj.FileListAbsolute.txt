@@ -30,3 +30,4 @@ D:\Project\TilemapEditor\TilemapEditor\obj\Debug\net8.0\TilemapEditor.pdb
 D:\Project\TilemapEditor\TilemapEditor\obj\Debug\net8.0\TilemapEditor.genruntimeconfig.cache
 D:\Project\TilemapEditor\TilemapEditor\obj\Debug\net8.0\ref\TilemapEditor.dll
 D:\Project\TilemapEditor\TilemapEditor\bin\Debug\net8.0\Content\tiles.xnb
+D:\Project\TilemapEditor\TilemapEditor\obj\Debug\net8.0\TilemapEditor.sourcelink.json
