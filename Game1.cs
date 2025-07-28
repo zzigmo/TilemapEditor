@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
 using System.IO;
+using System.Xml.Linq;
 
 namespace TilemapEditor
 {
@@ -12,17 +13,16 @@ namespace TilemapEditor
         SpriteBatch spriteBatch;
         Texture2D tileset;
 
-        const int tileSize = 16; // размер тайла
+        const int tileSize = 16;
 
         int mapWidth = 30;
-        int mapHeight = 18; // размер карты
+        int mapHeight = 18;
         int[,] mapData;
 
         int selectedTile = 0;
-        MouseState curMouse, prevMouse;
+        MouseState curMouse;
 
         int tilesetColumns;
-        int tilesetRows;
         int tileCount;
 
         public Game1()
@@ -36,40 +36,35 @@ namespace TilemapEditor
             graphics.ApplyChanges();
         }
 
-        protected override void Initialize() // инициализация размеров
+        protected override void Initialize()
         {
             mapData = new int[mapWidth, mapHeight];
-            for (int x = 0; x < mapWidth; x++)
-                for (int y = 0; y < mapHeight; y++)
-                    mapData[x, y] = -1;
-
+            ClearMap();
             base.Initialize();
         }
 
-        protected override void LoadContent() // грузит тайлы
+        protected override void LoadContent()
         {
             spriteBatch = new SpriteBatch(GraphicsDevice);
-            tileset = Content.Load<Texture2D>("tiles"); // название ехе файла с тайлами
+            tileset = Content.Load<Texture2D>("tiles");
 
-            tilesetColumns = tileset.Width / tileSize;//
-            tilesetRows = tileset.Height / tileSize;  //
-            tileCount = tilesetColumns * tilesetRows; // типо автоматически режет 
+            tilesetColumns = tileset.Width / tileSize;
+            tileCount = (tileset.Height / tileSize) * tilesetColumns;
         }
 
         protected override void Update(GameTime gameTime)
         {
-            curMouse = Mouse.GetState(); // корды мыш собирает
+            curMouse = Mouse.GetState();
             int mx = curMouse.X;
             int my = curMouse.Y;
 
-            if (curMouse.LeftButton == ButtonState.Pressed) // рисует
+            if (curMouse.LeftButton == ButtonState.Pressed)
             {
                 if (my < mapHeight * tileSize)
                 {
                     int x = mx / tileSize;
                     int y = my / tileSize;
-                    if (x >= 0 && x < mapWidth && y >= 0 && y < mapHeight)
-                        mapData[x, y] = selectedTile;
+                    if (InBounds(x, y)) mapData[x, y] = selectedTile;
                 }
                 else
                 {
@@ -81,21 +76,19 @@ namespace TilemapEditor
                 }
             }
 
-            if (curMouse.RightButton == ButtonState.Pressed) // стирает
+            if (curMouse.RightButton == ButtonState.Pressed)
             {
                 int x = mx / tileSize;
                 int y = my / tileSize;
-                if (x >= 0 && x < mapWidth && y >= 0 && y < mapHeight)
-                    mapData[x, y] = -1;
+                if (InBounds(x, y)) mapData[x, y] = -1;
             }
 
-            var k = Keyboard.GetState(); // псевдо сохранение
+            var k = Keyboard.GetState();
             if (k.IsKeyDown(Keys.S))
-                SaveMap("map.txt");
-            if (k.IsKeyDown(Keys.L)) // псевдо загрузка
-                LoadMap("map.txt");
+                SaveMapToXml("map.xml");
+            if (k.IsKeyDown(Keys.L))
+                LoadMapFromXml("map.xml");
 
-            prevMouse = curMouse;
             base.Update(gameTime);
         }
 
@@ -112,9 +105,7 @@ namespace TilemapEditor
                     int idx = mapData[x, y];
                     if (idx < 0) continue;
 
-                    int tx = idx % tilesetColumns;
-                    int ty = idx / tilesetColumns;
-                    Rectangle src = new Rectangle(tx * tileSize, ty * tileSize, tileSize, tileSize);
+                    Rectangle src = GetTileSourceRect(idx);
                     Vector2 pos = new Vector2(x * tileSize, y * tileSize);
                     spriteBatch.Draw(tileset, pos, src, Color.White);
                 }
@@ -125,22 +116,35 @@ namespace TilemapEditor
             {
                 int px = i % mapWidth;
                 int py = i / mapWidth;
-                if (py * tileSize + mapHeight * tileSize > graphics.PreferredBackBufferHeight - tileSize)
+                if ((py * tileSize + mapHeight * tileSize) > graphics.PreferredBackBufferHeight - tileSize)
                     continue;
 
-                int tx = i % tilesetColumns;
-                int ty = i / tilesetColumns;
-                Rectangle src = new Rectangle(tx * tileSize, ty * tileSize, tileSize, tileSize);
+                Rectangle src = GetTileSourceRect(i);
                 Vector2 pos = new Vector2(px * tileSize, mapHeight * tileSize + py * tileSize);
 
                 spriteBatch.Draw(tileset, pos, src, Color.White);
 
                 if (i == selectedTile)
-                    spriteBatch.Draw(CreateOutline(tileSize, tileSize, Color.Yellow), pos, Color.White); // обводка
+                    spriteBatch.Draw(CreateOutline(tileSize, tileSize, Color.Yellow), pos, Color.White);
             }
-
             spriteBatch.End();
             base.Draw(gameTime);
+        }
+
+        bool InBounds(int x, int y) => x >= 0 && x < mapWidth && y >= 0 && y < mapHeight;
+
+        Rectangle GetTileSourceRect(int index)
+        {
+            int tx = index % tilesetColumns;
+            int ty = index / tilesetColumns;
+            return new Rectangle(tx * tileSize, ty * tileSize, tileSize, tileSize);
+        }
+
+        void ClearMap()
+        {
+            for (int x = 0; x < mapWidth; x++)
+                for (int y = 0; y < mapHeight; y++)
+                    mapData[x, y] = -1;
         }
 
         Texture2D CreateOutline(int width, int height, Color color)
@@ -148,41 +152,70 @@ namespace TilemapEditor
             Texture2D tex = new Texture2D(GraphicsDevice, width, height);
             Color[] data = new Color[width * height];
 
-            for (int y = 0; y < height; y++)
-                for (int x = 0; x < width; x++)
-                {
-                    bool edge = (x == 0 ||  y == 0 || x == width - 1 || y == height - 1);
-                    data[y * width + x] = edge ? color : Color.Transparent;
+            for (int x = 0; x < width; x++)
+            {
+                for (int y = 0; y < height; y++)
+                { bool edge = (x == 0 || y == 0 || x == width - 1 || y == height - 1);
+                 data[y * width + x] = edge ? color : Color.Transparent;
                 }
-
+            }
             tex.SetData(data);
             return tex;
         }
 
-        void SaveMap(string path)
+        void SaveMapToXml(string filePath)
         {
-            using StreamWriter sw = new StreamWriter(path);
-            for (int y = 0; y < mapHeight; y++)
+            XElement root = new XElement("Map",
+                new XAttribute("Width", mapWidth),
+                new XAttribute("Height", mapHeight)
+            );
+        
+            for (int x = 0; x < mapWidth; x++)
             {
-                for (int x = 0; x < mapWidth; x++)
+                for (int y = 0; y < mapHeight; y++)
                 {
-                    sw.Write(mapData[x, y]);
-                    if (x < mapWidth - 1) sw.Write(",");
+                    int tile = mapData[x, y];
+                    if (tile >= 0)
+                    {
+                        root.Add(new XElement("Tile",
+                            new XAttribute("X", x),
+                            new XAttribute("Y", y),
+                            new XAttribute("ID", tile)));
+                    }
                 }
-                sw.WriteLine();
             }
+        
+            root.Save(filePath);
+            Console.WriteLine("Карта сохранена в " + Path.GetFullPath(filePath));
         }
-
-        void LoadMap(string path)
+        
+        void LoadMapFromXml(string filePath)
         {
-            if (!File.Exists(path)) return;
-            string[] lines = File.ReadAllLines(path);
-            for (int y = 0; y < Math.Min(lines.Length, mapHeight); y++)
+            if (!File.Exists(filePath)) return;
+        
+            XElement root = XElement.Load(filePath);
+            int width = int.Parse(root.Attribute("Width").Value);
+            int height = int.Parse(root.Attribute("Height").Value);
+        
+            if (width != mapWidth || height != mapHeight)
             {
-                string[] parts = lines[y].Split(',');
-                for (int x = 0; x < Math.Min(parts.Length, mapWidth); x++)
-                    if (int.TryParse(parts[x], out int val)) mapData[x, y] = val;
+                Console.WriteLine("Размер карты не совпадает с текущими настройками.");
+                return;
             }
+        
+            ClearMap();
+        
+            foreach (XElement tileElem in root.Elements("Tile"))
+            {
+                int x = int.Parse(tileElem.Attribute("X").Value);
+                int y = int.Parse(tileElem.Attribute("Y").Value);
+                int id = int.Parse(tileElem.Attribute("ID").Value);
+        
+                if (InBounds(x, y))
+                    mapData[x, y] = id;
+            }
+        
+            Console.WriteLine("Карта загружена из " + Path.GetFullPath(filePath));
         }
     }
 }

@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("TilemapEditor")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+2f11e24d4ffe824e1e02d77c85f6c12c4e92a83d")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+a3b4d0664a781fd0e3265334e5e26f04a541941b")]
 [assembly: System.Reflection.AssemblyProductAttribute("TilemapEditor")]
 [assembly: System.Reflection.AssemblyTitleAttribute("TilemapEditor")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

@@ -31,3 +31,4 @@ D:\Project\TilemapEditor\TilemapEditor\obj\Debug\net8.0\TilemapEditor.genruntime
 D:\Project\TilemapEditor\TilemapEditor\obj\Debug\net8.0\ref\TilemapEditor.dll
 D:\Project\TilemapEditor\TilemapEditor\bin\Debug\net8.0\Content\tiles.xnb
 D:\Project\TilemapEditor\TilemapEditor\obj\Debug\net8.0\TilemapEditor.sourcelink.json
+D:\Project\TilemapEditor\TilemapEditor\obj\Debug\net8.0\TilemapEditor.csproj.ResolveComReference.cache
